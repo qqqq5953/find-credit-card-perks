@@ -1,0 +1,12 @@
+# 複製成 .dev.vars 後填入（.dev.vars 不會被 commit）。各欄位申請方式見 SETUP.md
+
+# LINE Messaging API channel → Basic settings → Channel secret
+LINE_CHANNEL_SECRET=
+# LINE Messaging API channel → Messaging API → Channel access token (long-lived)
+LINE_CHANNEL_ACCESS_TOKEN=
+# LINE Login channel → LIFF 分頁 → LIFF ID（例如 1234567890-AbCdEfGh）
+LIFF_ID=
+# LINE Login channel → Basic settings → Channel ID（用來驗證 LIFF 的 ID token）
+LINE_LOGIN_CHANNEL_ID=
+# 自己產生的一串隨機字串，GitHub Actions 呼叫 /internal/notify 時使用
+NOTIFY_SECRET=

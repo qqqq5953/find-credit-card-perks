@@ -1,0 +1,94 @@
+name: 偵測權益變動
+
+on:
+  schedule:
+    - cron: "17 1 * * *" # 每天台灣時間 09:17
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "只檢查這些卡片（逗號分隔的卡片 ID，留空代表全部）"
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+concurrency:
+  group: update-cards
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    env:
+      LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+      ADMIN_LINE_USER_ID: ${{ secrets.ADMIN_LINE_USER_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - name: 抓取權益頁面並比對
+        id: fetch
+        run: npm run fetch-sources -- ${{ inputs.only && format('--only {0}', inputs.only) || '' }}
+
+      - name: 抓取失敗時通知管理者
+        if: steps.fetch.outputs.error_count != '0'
+        run: |
+          msg=$(node -e 'const r=require("./fetch-result.json");console.log("⚠️ 權益頁面抓取失敗，請手動確認：\n"+r.errors.map(e=>`・${e.card_id}：${e.error}`).join("\n"))')
+          npx tsx scripts/notify-admin.ts "$msg"
+
+      - name: 準備 Claude 的指示
+        id: prompt
+        if: steps.fetch.outputs.changed != ''
+        run: |
+          echo "權益原文有變動，但 Claude 沒有產生摘要，請人工確認。" > .update-summary.md
+          {
+            echo "text<<PROMPT_EOF"
+            sed "s/{{CHANGED}}/${{ steps.fetch.outputs.changed }}/" prompts/update-card.md
+            echo "PROMPT_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: 用 Claude Code 更新卡片資料
+        if: steps.fetch.outputs.changed != ''
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: ${{ steps.prompt.outputs.text }}
+          claude_args: >-
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(git diff:*),Bash(npm run validate-cards)"
+
+      - name: 驗證更新後的資料
+        if: steps.fetch.outputs.changed != ''
+        run: |
+          if npm test && npm run validate-cards; then
+            printf '\n---\n✅ 測試與資料驗證通過\n' >> .update-summary.md
+          else
+            printf '\n---\n❌ 測試或資料驗證失敗，請查看 Actions 紀錄後修正再 merge\n' >> .update-summary.md
+          fi
+
+      - name: 建立 PR
+        id: pr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: bot/update-cards
+          add-paths: |
+            data/**
+            snapshots/**
+          commit-message: "更新信用卡權益資料${{ steps.fetch.outputs.changed && format('：{0}', steps.fetch.outputs.changed) || '（新增權益快照）' }}"
+          title: "更新信用卡權益${{ steps.fetch.outputs.changed && format('：{0}', steps.fetch.outputs.changed) || '快照' }}"
+          body-path: ${{ steps.fetch.outputs.changed && '.update-summary.md' || '' }}
+          body: "第一次抓到這些卡片的權益頁面，先存成比對用的快照。"
+          delete-branch: true
+
+      - name: 通知管理者有 PR 待確認
+        if: steps.pr.outputs.pull-request-url && steps.fetch.outputs.changed != ''
+        run: |
+          npx tsx scripts/notify-admin.ts "🔄 信用卡權益有變動：${{ steps.fetch.outputs.changed }}
+          請確認後 merge：${{ steps.pr.outputs.pull-request-url }}"

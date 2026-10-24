@@ -1,0 +1,9 @@
+{
+  "sources": [
+    { "card_id": "cathay-cube", "url": "https://www.cathaybk.com.tw/cathaybk/personal/product/credit-card/cards/cube/", "type": "html", "selector": "main" },
+    { "card_id": "ctbc-linepay", "url": "https://www.ctbcbank.com/twrbo/zh_tw/cc_index/cc_product/cc_introduction_index/C_LINEPay.html", "type": "html", "selector": "main" },
+    { "card_id": "esun-ubear", "url": "https://www.esunbank.com/zh-tw/personal/credit-card/intro/bank-card/u-bear-card", "type": "html", "selector": "main" },
+    { "card_id": "fubon-j", "url": "https://www.fubon.com/banking/personal/credit_card/all_card/J/J.htm", "type": "html", "selector": "body" },
+    { "card_id": "taishin-richart", "url": "https://www.taishinbank.com.tw/TSB/personal/credit/intro/overview/cg047/card001/", "type": "html", "selector": "main" }
+  ]
+}

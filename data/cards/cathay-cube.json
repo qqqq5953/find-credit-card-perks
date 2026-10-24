@@ -1,0 +1,46 @@
+{
+  "id": "cathay-cube",
+  "bank": "國泰世華",
+  "name": "CUBE 卡",
+  "source_urls": ["https://www.cathaybk.com.tw/cathaybk/personal/product/credit-card/cards/cube/"],
+  "verified": false,
+  "updated_at": "2026-10-24",
+  "valid_from": "2026-07-01",
+  "valid_to": "2026-12-31",
+  "reward_unit": { "type": "points", "name": "小樹點", "twd_value": 1 },
+  "base": { "domestic": 0.003, "overseas": 0.003 },
+  "switchable": true,
+  "plans": [
+    {
+      "id": "digital",
+      "name": "玩數位",
+      "rules": [
+        { "id": "digital-online", "description": "指定網購與影音訂閱", "match": { "categories": ["online", "streaming"] }, "rate": 0.03 }
+      ]
+    },
+    {
+      "id": "shopping",
+      "name": "樂饗購",
+      "rules": [
+        { "id": "shopping-dining", "description": "餐廳、外送、百貨", "match": { "categories": ["dining", "delivery", "department_store"] }, "rate": 0.03 }
+      ]
+    },
+    {
+      "id": "travel",
+      "name": "趣旅行",
+      "rules": [
+        { "id": "travel-overseas", "description": "海外消費", "match": { "region": "overseas" }, "rate": 0.03 },
+        { "id": "travel-booking", "description": "指定訂房與旅遊平台", "match": { "categories": ["travel"] }, "rate": 0.03 }
+      ]
+    },
+    {
+      "id": "essentials",
+      "name": "集精選",
+      "rules": [
+        { "id": "essentials-daily", "description": "超商、超市、加油", "match": { "categories": ["convenience_store", "supermarket", "gas"] }, "rate": 0.02 }
+      ]
+    }
+  ],
+  "exclusions": ["保費", "繳稅", "儲值"],
+  "notes": "範例資料：回饋率與上限為示意數字，尚未對照官網確認。請用 prompts/extract-card.md 依官方權益原文重新整理。 每天可在 App 切換一次權益方案。"
+}

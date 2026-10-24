@@ -1,0 +1,16 @@
+name = "find-credit-card-perks"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+# LIFF 頁面等靜態檔案；/api、/webhook、/internal 由 Worker 處理
+[assets]
+directory = "./public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "perks-db"
+# 執行 `npx wrangler d1 create perks-db` 後，把拿到的 database_id 填在這裡（見 SETUP.md）
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+# 機密值不要寫在這裡：本機放 .dev.vars，正式環境用 `wrangler secret put`

@@ -1,0 +1,24 @@
+{
+  "id": "fubon-j",
+  "bank": "台北富邦",
+  "name": "J 卡",
+  "source_urls": ["https://www.fubon.com/banking/personal/credit_card/all_card/J/J.htm"],
+  "verified": false,
+  "updated_at": "2026-10-24",
+  "valid_from": "2026-07-01",
+  "valid_to": "2026-12-31",
+  "reward_unit": { "type": "cash", "name": "刷卡金", "twd_value": 1 },
+  "base": { "domestic": 0.01, "overseas": 0.01 },
+  "switchable": false,
+  "plans": [
+    {
+      "id": "default",
+      "name": "一般",
+      "rules": [
+        { "id": "japan-korea", "description": "日本、韓國實體消費加碼", "match": { "region": "overseas" }, "rate": 0.03, "cap": { "period": "quarter", "max_reward": 600 }, "conditions": ["限日本、韓國實體商店", "需登錄"] },
+        { "id": "transport", "description": "國內交通加碼", "match": { "categories": ["transport"], "region": "domestic" }, "rate": 0.03, "cap": { "period": "month", "max_reward": 100 } }
+      ]
+    }
+  ],
+  "notes": "範例資料：回饋率與上限為示意數字，尚未對照官網確認。請用 prompts/extract-card.md 依官方權益原文重新整理。"
+}

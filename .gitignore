@@ -1,0 +1,7 @@
+node_modules/
+.wrangler/
+.dev.vars
+.update-summary.md
+changes.json
+fetch-result.json
+src/generated/

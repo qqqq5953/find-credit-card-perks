@@ -1,0 +1,29 @@
+{
+  "merchants": [
+    { "name": "7-ELEVEN", "category": "convenience_store", "aliases": ["7-11", "711", "小七", "統一超商"] },
+    { "name": "全家", "category": "convenience_store", "aliases": ["全家便利商店", "familymart"] },
+    { "name": "萊爾富", "category": "convenience_store", "aliases": ["hi-life"] },
+    { "name": "全聯", "category": "supermarket", "aliases": ["全聯福利中心", "px mart"] },
+    { "name": "家樂福", "category": "supermarket", "aliases": ["carrefour"] },
+    { "name": "好市多", "category": "supermarket", "aliases": ["costco"] },
+    { "name": "Uber Eats", "category": "delivery", "aliases": ["ubereats", "uber eat"] },
+    { "name": "foodpanda", "category": "delivery", "aliases": ["熊貓", "food panda"] },
+    { "name": "Uber", "category": "transport", "aliases": ["優步"] },
+    { "name": "中油", "category": "gas", "aliases": ["台灣中油", "cpc"] },
+    { "name": "台塑石油", "category": "gas", "aliases": ["台塑"] },
+    { "name": "蝦皮", "category": "online", "aliases": ["蝦皮購物", "shopee"] },
+    { "name": "momo", "category": "online", "aliases": ["momo購物", "富邦momo"] },
+    { "name": "PChome", "category": "online", "aliases": ["pchome 24h", "pc home"] },
+    { "name": "Netflix", "category": "streaming", "aliases": ["網飛"] },
+    { "name": "Spotify", "category": "streaming" },
+    { "name": "Disney+", "category": "streaming", "aliases": ["disney plus"] },
+    { "name": "Agoda", "category": "travel" },
+    { "name": "Booking.com", "category": "travel", "aliases": ["booking"] },
+    { "name": "屈臣氏", "category": "drugstore", "aliases": ["watsons"] },
+    { "name": "康是美", "category": "drugstore", "aliases": ["cosmed"] },
+    { "name": "新光三越", "category": "department_store" },
+    { "name": "SOGO", "category": "department_store", "aliases": ["太平洋sogo", "遠東sogo"] },
+    { "name": "星巴克", "category": "dining", "aliases": ["starbucks"] },
+    { "name": "麥當勞", "category": "dining", "aliases": ["mcdonald", "麥當當"] }
+  ]
+}

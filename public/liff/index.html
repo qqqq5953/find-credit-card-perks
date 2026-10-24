@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>我的信用卡</title>
+  <style>
+    :root {
+      --bg: #f5f6f8; --surface: #fff; --text: #1f2328; --muted: #6b7280;
+      --line: #e5e7eb; --accent: #06c755; --accent-weak: #e7f8ee; --warn: #c0392b;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #111315; --surface: #1c1f22; --text: #e8eaed; --muted: #9aa0a6; --line: #2e3236; --accent-weak: #10301d; --warn: #ff7b6b; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; background: var(--bg); color: var(--text); padding-bottom: 96px; }
+    header { position: sticky; top: 0; background: var(--bg); padding: 16px 16px 8px; z-index: 1; }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    .hint { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+    input[type=search] { width: 100%; padding: 10px 12px; font-size: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text); }
+    main { padding: 0 16px; }
+    h2 { font-size: 13px; color: var(--muted); margin: 20px 0 8px; font-weight: 600; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+    .card { position: relative; background: var(--surface); border: 2px solid var(--line); border-radius: 12px; padding: 10px; cursor: pointer; user-select: none; }
+    .card.selected { border-color: var(--accent); background: var(--accent-weak); }
+    .face { aspect-ratio: 1.586; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: flex-end; padding: 8px; color: #fff; font-size: 12px; font-weight: 600; background-size: cover; background-position: center; }
+    .name { font-size: 14px; font-weight: 600; }
+    .check { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; display: none; align-items: center; justify-content: center; font-size: 14px; }
+    .card.selected .check { display: flex; }
+    .unverified { color: var(--warn); font-size: 11px; margin-top: 2px; }
+    select { margin-top: 6px; width: 100%; padding: 6px; font-size: 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); }
+    .setting { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border-radius: 12px; padding: 12px; margin-top: 20px; font-size: 14px; }
+    footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--bg); border-top: 1px solid var(--line); }
+    button { width: 100%; padding: 14px; font-size: 16px; font-weight: 600; border: 0; border-radius: 12px; background: var(--accent); color: #fff; }
+    button:disabled { opacity: .5; }
+    .status { text-align: center; color: var(--muted); padding: 40px 16px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>我的信用卡</h1>
+    <p class="hint">點選你持有的卡片，可以一次選很多張</p>
+    <input type="search" id="search" placeholder="搜尋銀行或卡名">
+  </header>
+  <main id="list"><p class="status">載入中…</p></main>
+  <main>
+    <label class="setting">權益變動時通知我 <input type="checkbox" id="notify" checked></label>
+  </main>
+  <footer><button id="save" disabled>儲存</button></footer>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script>
+    const selected = new Map(); // card_id → selected_plan
+    let catalog = [];
+    let idToken = null;
+
+    const palette = ["#1f6feb", "#8250df", "#bf3989", "#cf222e", "#bc4c00", "#1a7f37", "#0969da", "#6639ba"];
+    const colorFor = (s) => palette[[...s].reduce((a, ch) => a + ch.charCodeAt(0), 0) % palette.length];
+
+    function render() {
+      const keyword = document.getElementById("search").value.trim().toLowerCase();
+      const list = document.getElementById("list");
+      const cards = catalog.filter((c) => !keyword || `${c.bank}${c.name}`.toLowerCase().includes(keyword));
+      if (!cards.length) { list.innerHTML = '<p class="status">找不到符合的卡片</p>'; return; }
+
+      const byBank = new Map();
+      for (const c of cards) byBank.set(c.bank, [...(byBank.get(c.bank) || []), c]);
+      list.replaceChildren();
+      for (const [bank, bankCards] of byBank) {
+        const h = document.createElement("h2");
+        h.textContent = bank;
+        const grid = document.createElement("div");
+        grid.className = "grid";
+        for (const c of bankCards) grid.append(cardEl(c));
+        list.append(h, grid);
+      }
+    }
+
+    function cardEl(c) {
+      const el = document.createElement("div");
+      el.className = "card" + (selected.has(c.id) ? " selected" : "");
+      const face = document.createElement("div");
+      face.className = "face";
+      if (c.image) face.style.backgroundImage = `url(/cards/${c.image})`;
+      else { face.style.background = colorFor(c.id); face.textContent = c.bank; }
+      const name = document.createElement("div");
+      name.className = "name";
+      name.textContent = c.name;
+      const check = document.createElement("div");
+      check.className = "check";
+      check.textContent = "✓";
+      el.append(check, face, name);
+      if (!c.verified) {
+        const u = document.createElement("div");
+        u.className = "unverified";
+        u.textContent = "範例資料";
+        el.append(u);
+      }
+      if (c.switchable && selected.has(c.id)) {
+        const sel = document.createElement("select");
+        for (const p of c.plans) sel.add(new Option(`目前方案：${p.name}`, p.id));
+        sel.value = selected.get(c.id) || c.plans[0].id;
+        sel.addEventListener("click", (e) => e.stopPropagation());
+        sel.addEventListener("change", () => selected.set(c.id, sel.value));
+        el.append(sel);
+      }
+      el.addEventListener("click", () => {
+        if (selected.has(c.id)) selected.delete(c.id);
+        else selected.set(c.id, c.switchable ? c.plans[0].id : null);
+        render();
+      });
+      return el;
+    }
+
+    async function api(path, options = {}) {
+      const res = await fetch(path, { ...options, headers: { "content-type": "application/json", authorization: `Bearer ${idToken}`, ...(options.headers || {}) } });
+      if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+      return res.json();
+    }
+
+    async function save() {
+      const btn = document.getElementById("save");
+      btn.disabled = true;
+      btn.textContent = "儲存中…";
+      try {
+        const cards = [...selected].map(([card_id, selected_plan]) => ({ card_id, selected_plan }));
+        await api("/api/my-cards", { method: "PUT", body: JSON.stringify({ cards, notify: document.getElementById("notify").checked }) });
+        if (liff.isInClient()) {
+          await liff.sendMessages([{ type: "text", text: `已設定 ${cards.length} 張卡片 ✅` }]).catch(() => {});
+          liff.closeWindow();
+        } else {
+          btn.textContent = "已儲存 ✅";
+        }
+      } catch (e) {
+        alert("儲存失敗，請稍後再試\n" + e.message);
+        btn.textContent = "儲存";
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function main() {
+      const { liffId } = await fetch("/api/config").then((r) => r.json());
+      await liff.init({ liffId });
+      if (!liff.isLoggedIn()) { liff.login(); return; }
+      idToken = liff.getIDToken();
+
+      const [cat, mine] = await Promise.all([fetch("/api/catalog").then((r) => r.json()), api("/api/my-cards")]);
+      catalog = cat;
+      for (const uc of mine.cards) selected.set(uc.card_id, uc.selected_plan);
+      document.getElementById("notify").checked = mine.notify;
+
+      document.getElementById("search").addEventListener("input", render);
+      const btn = document.getElementById("save");
+      btn.addEventListener("click", save);
+      btn.disabled = false;
+      render();
+    }
+
+    main().catch((e) => {
+      document.getElementById("list").innerHTML = "";
+      const p = document.createElement("p");
+      p.className = "status";
+      p.textContent = "載入失敗：" + e.message;
+      document.getElementById("list").append(p);
+    });
+  </script>
+</body>
+</html>
