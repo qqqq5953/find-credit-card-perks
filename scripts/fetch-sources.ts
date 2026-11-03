@@ -6,7 +6,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync, appendFileSync } fr
 import { chromium, type Browser } from "playwright";
 import { extractText, getDocumentProxy } from "unpdf";
 import type { Source } from "../src/types";
-import { compareSnapshot, normalizeText, type SnapshotStatus } from "./lib/snapshot";
+import { compareSnapshot, normalizeText, selectFollowLinks, type SnapshotStatus } from "./lib/snapshot";
 
 const arg = (name: string) => {
   const i = process.argv.indexOf(name);
@@ -22,15 +22,44 @@ async function fetchHtml(browser: Browser, source: Source): Promise<string> {
   try {
     const res = await page.goto(source.url, { waitUntil: "networkidle", timeout: 60_000 });
     if (res && res.status() >= 400) throw new Error(`HTTP ${res.status()}，網址可能已失效`);
-    const locator = page.locator(source.selector ?? "body").first();
-    return await locator.innerText({ timeout: 15_000 });
+    const main = await page.locator(source.selector ?? "body").first().innerText({ timeout: 15_000 });
+    if (!source.follow_links) return main;
+
+    // 細節在子頁面時，把指定的連結一個個點進去，內容接在主頁後面
+    const links = selectFollowLinks(
+      await page.$$eval(source.follow_links, (as) =>
+        as.map((a) => ({ href: a.getAttribute("href") ?? "", text: a.textContent ?? "" })),
+      ),
+      page.url(), // 用實際網址（可能經過轉址）解析相對連結
+    );
+    const parts = [main];
+    for (const link of links) {
+      parts.push(`\n===== 連結：${link.text || "（無標題）"} ${link.href} =====\n`);
+      try {
+        parts.push(/\.pdf($|\?)/i.test(link.href) ? await fetchPdfText(link.href) : await fetchSubPage(browser, link.href, source));
+      } catch (e) {
+        parts.push(`（無法讀取：${(e as Error).message}）`);
+      }
+    }
+    return parts.join("\n");
   } finally {
     await page.close();
   }
 }
 
-async function fetchPdf(source: Source): Promise<string> {
-  const res = await fetch(source.url);
+async function fetchSubPage(browser: Browser, url: string, source: Source): Promise<string> {
+  const page = await browser.newPage({ locale: "zh-TW" });
+  try {
+    const res = await page.goto(url, { waitUntil: "networkidle", timeout: 60_000 });
+    if (res && res.status() >= 400) throw new Error(`HTTP ${res.status()}`);
+    return await page.locator(source.follow_selector ?? "body").first().innerText({ timeout: 15_000 });
+  } finally {
+    await page.close();
+  }
+}
+
+async function fetchPdfText(url: string): Promise<string> {
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const pdf = await getDocumentProxy(new Uint8Array(await res.arrayBuffer()));
   const { text } = await extractText(pdf, { mergePages: true });
@@ -68,7 +97,7 @@ async function main() {
         continue;
       }
       try {
-        const raw = source.type === "pdf" ? await fetchPdf(source) : await fetchHtml(browser!, source);
+        const raw = source.type === "pdf" ? await fetchPdfText(source.url) : await fetchHtml(browser!, source);
         const text = normalizeText(raw, source);
         if (text.trim().length < 50) throw new Error("擷取到的內容太短，selector 可能失效");
         const previous = existsSync(path) ? readFileSync(path, "utf8") : null;

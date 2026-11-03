@@ -36,13 +36,14 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
 
-      - name: 檢查是否有卡片缺少官方網址
+      - name: 檢查是否有卡片需要設定抓取方式
         id: sources
         run: |
           echo "# 信用卡權益資料更新" > .update-summary.md
-          echo "missing=$(node -p 'require("./data/sources.json").sources.filter(s => !s.url).length')" >> "$GITHUB_OUTPUT"
+          # 缺少網址，或還沒確認是否要點進子頁面（沒有 follow_links 欄位）
+          echo "missing=$(node -p 'require("./data/sources.json").sources.filter(s => !s.url || !("follow_links" in s)).length')" >> "$GITHUB_OUTPUT"
 
-      - name: 用 Claude Code 搜尋官方權益網址
+      - name: 用 Claude Code 設定官方網址與子頁面
         if: steps.sources.outputs.missing != '0'
         uses: anthropics/claude-code-action@v1
         with:

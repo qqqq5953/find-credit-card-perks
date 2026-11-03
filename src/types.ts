@@ -100,6 +100,13 @@ export interface Source {
   selector?: string;
   /** 正文中每次都會變動、要忽略的文字（正規表示式） */
   ignore_patterns?: string[];
+  /**
+   * 主頁上要「點進去」一起抓的連結（CSS selector，例如 `a[href*='Activity']`）。
+   * 細節寫在子頁面時使用；null 代表確認過不需要；沒有這個欄位代表還沒確認，會由 Claude 檢查頁面後設定
+   */
+  follow_links?: string | null;
+  /** 子頁面要擷取的區塊，預設 body */
+  follow_selector?: string;
 }
 
 export interface UserCard {

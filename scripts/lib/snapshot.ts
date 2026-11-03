@@ -17,3 +17,29 @@ export function compareSnapshot(previous: string | null, current: string): Snaps
   if (previous === null) return "baseline";
   return previous === current ? "unchanged" : "changed";
 }
+
+export const MAX_FOLLOW_LINKS = 15;
+
+/** 第一個標籤以外的網域，例如 card.firstbank.com.tw → firstbank.com.tw */
+const siteOf = (host: string) => (host.split(".").length > 2 ? host.split(".").slice(1).join(".") : host);
+
+/** 挑出要點進去的連結：同一個銀行網域、去除重複與頁內錨點，依網址排序讓快照順序穩定 */
+export function selectFollowLinks(links: { href: string; text: string }[], baseUrl: string, max = MAX_FOLLOW_LINKS) {
+  const site = siteOf(new URL(baseUrl).hostname);
+  const seen = new Map<string, string>();
+  for (const { href, text } of links) {
+    let url: URL;
+    try {
+      url = new URL(href, baseUrl);
+    } catch {
+      continue;
+    }
+    if (!/^https?:$/.test(url.protocol)) continue;
+    if (url.hostname !== site && !url.hostname.endsWith(`.${site}`)) continue;
+    url.hash = "";
+    const key = url.toString();
+    if (key === new URL(baseUrl).toString() || seen.has(key)) continue;
+    seen.set(key, text.replace(/\s+/g, " ").trim());
+  }
+  return [...seen].sort(([a], [b]) => a.localeCompare(b)).slice(0, max).map(([href, text]) => ({ href, text }));
+}

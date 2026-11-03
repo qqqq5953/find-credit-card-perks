@@ -1,7 +1,7 @@
 {
   "sources": [
     { "card_id": "firstbank-living-green", "bank": "第一銀行", "name": "Living Green 綠活卡", "url": "", "type": "html", "selector": "body" },
-    { "card_id": "firstbank-ileo", "bank": "第一銀行", "name": "iLEO 信用卡", "url": "", "type": "html", "selector": "body" },
+    { "card_id": "firstbank-ileo", "bank": "第一銀行", "name": "iLEO 信用卡", "url": "https://card.firstbank.com.tw/sites/Satellite?c=CreditCard&cid=1565690685937&d=Touch&pagename=FirstBankCard%2FCreditCard%2Fzh%2FCreditCardDetailView", "type": "html", "selector": "body" },
     { "card_id": "firstbank-yilan", "bank": "第一銀行", "name": "宜蘭認同卡", "url": "", "type": "html", "selector": "body" },
     { "card_id": "ubot-lai-dian", "bank": "聯邦銀行", "name": "賴點卡", "url": "https://activity.ubot.com.tw/2026LaiDianCard/index.htm", "type": "html", "selector": "body" },
     { "card_id": "ubot-happy-m", "bank": "聯邦銀行", "name": "幸福M卡", "url": "", "type": "html", "selector": "body" },

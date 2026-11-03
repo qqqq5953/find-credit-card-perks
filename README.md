@@ -52,7 +52,9 @@ npm run dev             # 本機啟動 Worker
 { "card_id": "bank-card", "bank": "銀行名稱", "name": "卡名", "url": "", "type": "html", "selector": "body" }
 ```
 
-下一次「偵測權益變動」執行時，Claude 會搜尋官方網址、抓取權益頁面、建立 `data/cards/<card_id>.json`，然後開 PR 給你確認。
+下一次「偵測權益變動」執行時，Claude 會搜尋官方網址，並檢查細節是否寫在子頁面（例如各個活動的詳情頁）。需要的話會設定 `follow_links`，讓程式把這些連結一起點進去抓。接著抓取權益頁面、建立 `data/cards/<card_id>.json`，然後開 PR 給你確認。
+
+`follow_links` 是一個 CSS selector，例如 `a[href*='Activity']`；`null` 代表不需要點進子頁面；沒有這個欄位代表還沒確認。
 
 **手動**：把 `prompts/extract-card.md`、`data/schema/card.schema.json`、`data/categories.json`、`data/merchants.json` 和權益全文貼到 Claude 網頁版，把輸出存成 `data/cards/<card_id>.json`，再執行 `npm run validate-cards`。
 
