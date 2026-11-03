@@ -20,6 +20,9 @@ concurrency:
 
 jobs:
   detect:
+    # 設定完成前先停用：到 repo 的 Settings → Secrets and variables → Actions → Variables
+    # 新增 ENABLE_AUTOMATION = true 才會執行（見 SETUP.md）。停用時會顯示為 skipped，不會寄失敗通知
+    if: vars.ENABLE_AUTOMATION == 'true'
     runs-on: ubuntu-latest
     env:
       LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}

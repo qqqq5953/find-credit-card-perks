@@ -13,6 +13,7 @@
 | `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID` | GitHub Actions 自動部署 | | | ✅ |
 | `CLAUDE_CODE_OAUTH_TOKEN` | GitHub Actions 中用 Claude Pro 更新資料 | | | ✅ |
 | `WORKER_URL`（**Variables**，不是 Secrets） | 例如 `https://find-credit-card-perks.xxx.workers.dev` | | | ✅ |
+| `ENABLE_AUTOMATION`（**Variables**） | 設為 `true` 才會啟用每日偵測和自動部署 | | | ✅ |
 
 ---
 
@@ -63,6 +64,9 @@ GitHub Actions 自動部署需要的 API token：Cloudflare Dashboard → My Pro
 4. 用手機加 Bot 好友 → 設定卡片 → 輸入「全聯 800」測試。
 
 ## 5. 自動偵測權益變動（GitHub Actions + Claude Pro）
+
+> 「偵測權益變動」和「部署並通知持卡人」這兩個 workflow **預設是停用的**，執行時會顯示為 skipped，不會寄失敗通知信。
+> 完成下面所有設定後，再到 Settings → Secrets and variables → Actions → **Variables** 新增 `ENABLE_AUTOMATION`，值填 `true`，就會啟用。想暫停時，把它改成 `false` 或刪除即可。
 
 1. 在你的電腦執行 `claude setup-token`（需要先安裝 Claude Code 並用 Pro 帳號登入），複製產生的 token → GitHub Secret `CLAUDE_CODE_OAUTH_TOKEN`。
 2. 取得你自己的 LINE user ID：Messaging API channel → Basic settings 最下方的 `Your user ID` → `ADMIN_LINE_USER_ID`。

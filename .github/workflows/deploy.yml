@@ -11,6 +11,8 @@ concurrency:
 
 jobs:
   deploy:
+    # 設定完成前先停用，啟用方式同 update-cards.yml（repo 變數 ENABLE_AUTOMATION = true）
+    if: vars.ENABLE_AUTOMATION == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

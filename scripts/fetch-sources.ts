@@ -20,7 +20,8 @@ const { sources } = JSON.parse(readFileSync(arg("--sources") ?? "data/sources.js
 async function fetchHtml(browser: Browser, source: Source): Promise<string> {
   const page = await browser.newPage({ locale: "zh-TW" });
   try {
-    await page.goto(source.url, { waitUntil: "networkidle", timeout: 60_000 });
+    const res = await page.goto(source.url, { waitUntil: "networkidle", timeout: 60_000 });
+    if (res && res.status() >= 400) throw new Error(`HTTP ${res.status()}，網址可能已失效`);
     const locator = page.locator(source.selector ?? "body").first();
     return await locator.innerText({ timeout: 15_000 });
   } finally {
