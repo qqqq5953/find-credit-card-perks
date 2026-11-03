@@ -71,6 +71,19 @@ for (const file of readdirSync(DIR).filter((f) => f.endsWith(".json")).sort()) {
   }
 }
 
+const sourceIds = new Set<string>();
+for (const src of sources as { card_id: string; bank?: string; name?: string; url?: string; type?: string }[]) {
+  const at = `data/sources.json [${src.card_id}]`;
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(src.card_id ?? "")) errors.push(`${at}: card_id 格式錯誤`);
+  if (sourceIds.has(src.card_id)) errors.push(`${at}: card_id 重複`);
+  sourceIds.add(src.card_id);
+  if (!src.bank || !src.name) errors.push(`${at}: 需要填 bank 和 name`);
+  if (src.type !== "html" && src.type !== "pdf") errors.push(`${at}: type 必須是 html 或 pdf`);
+  if (src.url && !/^https?:\/\//.test(src.url)) errors.push(`${at}: url 格式錯誤`);
+  if (!src.url) warnings.push(`${at}: 還沒有權益頁面網址，會在 GitHub Actions 中由 Claude 搜尋補上`);
+  else if (!seenIds.has(src.card_id)) warnings.push(`${at}: 卡片資料尚未建立，會在第一次抓到頁面後由 Claude 建立`);
+}
+
 for (const w of warnings) console.warn(`⚠️  ${w}`);
 for (const e of errors) console.error(`❌ ${e}`);
 console.log(`\n檢查 ${seenIds.size} 張卡：${errors.length} 個錯誤、${warnings.length} 個提醒`);

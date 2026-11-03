@@ -40,6 +40,11 @@ describe("parseQuery", () => {
     expect(parse("LINE Pay 全聯 300")).toMatchObject({ payment: "linepay", merchant: "全聯", amount: 300 });
   });
 
+  it("Gogoro 電池月租", () => {
+    expect(parse("Gogoro 月租 299")).toMatchObject({ merchant: "Gogoro", category: "transport", amount: 299 });
+    expect(parse("電池資費")).toMatchObject({ merchant: "Gogoro" });
+  });
+
   it("無法辨識", () => {
     const q = parse("不知道的店 200");
     expect(isRecognized(q)).toBe(false);

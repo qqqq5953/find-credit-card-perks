@@ -36,29 +36,54 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
 
+      - name: 檢查是否有卡片缺少官方網址
+        id: sources
+        run: |
+          echo "# 信用卡權益資料更新" > .update-summary.md
+          echo "missing=$(node -p 'require("./data/sources.json").sources.filter(s => !s.url).length')" >> "$GITHUB_OUTPUT"
+
+      - name: 用 Claude Code 搜尋官方權益網址
+        if: steps.sources.outputs.missing != '0'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: "請依照 prompts/find-sources.md 的指示處理。"
+          claude_args: >-
+            --allowedTools "Read,Edit,Write,Glob,Grep,WebSearch,WebFetch"
+
       - name: 抓取權益頁面並比對
         id: fetch
         run: npm run fetch-sources -- ${{ inputs.only && format('--only {0}', inputs.only) || '' }}
 
+      - name: 整理抓取結果
+        run: |
+          node -e '
+            const r = require("./fetch-result.json");
+            const label = { baseline: "🆕 第一次抓到", changed: "🔄 有變動", unchanged: "✅ 沒變動", error: "❌ 失敗", no_url: "⏭️ 沒有網址" };
+            const rows = r.results.map(x => `| ${x.card_id} | ${label[x.status]} | ${x.error ?? ""} |`);
+            console.log(["", "## 抓取結果", "", "| 卡片 | 狀態 | 說明 |", "|---|---|---|", ...rows].join("\n"));
+          ' >> .update-summary.md
+
       - name: 抓取失敗時通知管理者
         if: steps.fetch.outputs.error_count != '0'
         run: |
-          msg=$(node -e 'const r=require("./fetch-result.json");console.log("⚠️ 權益頁面抓取失敗，請手動確認：\n"+r.errors.map(e=>`・${e.card_id}：${e.error}`).join("\n"))')
+          msg=$(node -e 'const r=require("./fetch-result.json");console.log("⚠️ 權益頁面抓取失敗，請確認網址：\n"+r.errors.map(e=>`・${e.card_id}：${e.error}`).join("\n"))')
           npx tsx scripts/notify-admin.ts "$msg"
 
       - name: 準備 Claude 的指示
         id: prompt
-        if: steps.fetch.outputs.changed != ''
+        if: steps.fetch.outputs.targets != ''
         run: |
-          echo "權益原文有變動，但 Claude 沒有產生摘要，請人工確認。" > .update-summary.md
           {
             echo "text<<PROMPT_EOF"
-            sed "s/{{CHANGED}}/${{ steps.fetch.outputs.changed }}/" prompts/update-card.md
+            sed -e "s/{{CHANGED}}/${{ steps.fetch.outputs.changed || '（無）' }}/" \
+                -e "s/{{NEW_CARDS}}/${{ steps.fetch.outputs.new_cards || '（無）' }}/" prompts/update-card.md
             echo "PROMPT_EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: 用 Claude Code 更新卡片資料
-        if: steps.fetch.outputs.changed != ''
+      - name: 用 Claude Code 建立或更新卡片資料
+        if: steps.fetch.outputs.targets != ''
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -68,7 +93,6 @@ jobs:
             --allowedTools "Read,Edit,Write,Glob,Grep,Bash(git diff:*),Bash(npm run validate-cards)"
 
       - name: 驗證更新後的資料
-        if: steps.fetch.outputs.changed != ''
         run: |
           if npm test && npm run validate-cards; then
             printf '\n---\n✅ 測試與資料驗證通過\n' >> .update-summary.md
@@ -84,14 +108,13 @@ jobs:
           add-paths: |
             data/**
             snapshots/**
-          commit-message: "更新信用卡權益資料${{ steps.fetch.outputs.changed && format('：{0}', steps.fetch.outputs.changed) || '（新增權益快照）' }}"
-          title: "更新信用卡權益${{ steps.fetch.outputs.changed && format('：{0}', steps.fetch.outputs.changed) || '快照' }}"
-          body-path: ${{ steps.fetch.outputs.changed && '.update-summary.md' || '' }}
-          body: "第一次抓到這些卡片的權益頁面，先存成比對用的快照。"
+          commit-message: "更新信用卡權益資料${{ steps.fetch.outputs.targets && format('：{0}', steps.fetch.outputs.targets) || '' }}"
+          title: "更新信用卡權益資料${{ steps.fetch.outputs.targets && format('：{0}', steps.fetch.outputs.targets) || '' }}"
+          body-path: .update-summary.md
           delete-branch: true
 
       - name: 通知管理者有 PR 待確認
-        if: steps.pr.outputs.pull-request-url && steps.fetch.outputs.changed != ''
+        if: steps.pr.outputs.pull-request-url
         run: |
-          npx tsx scripts/notify-admin.ts "🔄 信用卡權益有變動：${{ steps.fetch.outputs.changed }}
-          請確認後 merge：${{ steps.pr.outputs.pull-request-url }}"
+          npx tsx scripts/notify-admin.ts "🔄 信用卡權益資料有更新，請確認後 merge：
+          ${{ steps.pr.outputs.pull-request-url }}"

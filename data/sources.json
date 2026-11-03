@@ -1,9 +1,13 @@
 {
   "sources": [
-    { "card_id": "cathay-cube", "url": "https://www.cathaybk.com.tw/cathaybk/personal/product/credit-card/cards/cube/", "type": "html", "selector": "main" },
-    { "card_id": "ctbc-linepay", "url": "https://www.ctbcbank.com/twrbo/zh_tw/cc_index/cc_product/cc_introduction_index/C_LINEPay.html", "type": "html", "selector": "main" },
-    { "card_id": "esun-ubear", "url": "https://www.esunbank.com/zh-tw/personal/credit-card/intro/bank-card/u-bear-card", "type": "html", "selector": "main" },
-    { "card_id": "fubon-j", "url": "https://www.fubon.com/banking/personal/credit_card/all_card/J/J.htm", "type": "html", "selector": "body" },
-    { "card_id": "taishin-richart", "url": "https://www.taishinbank.com.tw/TSB/personal/credit/intro/overview/cg047/card001/", "type": "html", "selector": "main" }
+    { "card_id": "firstbank-living-green", "bank": "第一銀行", "name": "Living Green 綠活卡", "url": "", "type": "html", "selector": "body" },
+    { "card_id": "firstbank-ileo", "bank": "第一銀行", "name": "iLEO 信用卡", "url": "", "type": "html", "selector": "body" },
+    { "card_id": "firstbank-yilan", "bank": "第一銀行", "name": "宜蘭認同卡", "url": "", "type": "html", "selector": "body" },
+    { "card_id": "ubot-lai-dian", "bank": "聯邦銀行", "name": "賴點卡", "url": "https://activity.ubot.com.tw/2026LaiDianCard/index.htm", "type": "html", "selector": "body" },
+    { "card_id": "ubot-happy-m", "bank": "聯邦銀行", "name": "幸福M卡", "url": "", "type": "html", "selector": "body" },
+    { "card_id": "megabank-gogoro", "bank": "兆豐銀行", "name": "Gogoro 聯名卡", "url": "", "type": "html", "selector": "body" },
+    { "card_id": "sinopac-bibei", "bank": "永豐銀行", "name": "幣倍卡", "url": "", "type": "html", "selector": "body" },
+    { "card_id": "cathay-cube", "bank": "國泰世華", "name": "CUBE 卡", "url": "https://www.cathaybk.com.tw/cathaybk/personal/product/credit-card/cards/cube/", "type": "html", "selector": "main" },
+    { "card_id": "dbs-eco", "bank": "星展銀行", "name": "eco 永續卡", "url": "https://www.dbs.com.tw/personal-zh/cards/dbs_eco/index.html", "type": "html", "selector": "body" }
   ]
 }

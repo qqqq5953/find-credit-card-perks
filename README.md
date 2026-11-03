@@ -44,15 +44,25 @@ npm run dev             # 本機啟動 Worker
 
 申請帳號、設定金鑰和部署方式見 [SETUP.md](SETUP.md)。
 
-## 新增或更新一張卡
+## 新增一張卡
 
-1. 打開銀行的權益頁面或 PDF，複製全文。
-2. 把 `prompts/extract-card.md`、`data/schema/card.schema.json`、`data/categories.json`、`data/merchants.json` 和權益全文，一起貼到 Claude 網頁版。
-3. 把輸出存成 `data/cards/<卡片ID>.json`，並在 `data/sources.json` 加上這張卡的網址。
-4. 執行 `npm run validate-cards`，對照原文確認無誤後，把 `verified` 改成 `true`。
-5. 卡面圖片（選用）放在 `public/cards/`，並在 JSON 的 `image` 欄位填檔名。
+**自動（建議）**：在 `data/sources.json` 加一筆，網址不知道可以留空：
 
-> ⚠️ 目前 `data/cards/` 裡的 5 張卡是**範例資料**，數字只是示意，尚未對照官網確認（`verified: false`），Bot 的回覆中也會標示。正式使用前，請依照上面的步驟，用官方原文重新整理。
+```json
+{ "card_id": "bank-card", "bank": "銀行名稱", "name": "卡名", "url": "", "type": "html", "selector": "body" }
+```
+
+下一次「偵測權益變動」執行時，Claude 會搜尋官方網址、抓取權益頁面、建立 `data/cards/<card_id>.json`，然後開 PR 給你確認。
+
+**手動**：把 `prompts/extract-card.md`、`data/schema/card.schema.json`、`data/categories.json`、`data/merchants.json` 和權益全文貼到 Claude 網頁版，把輸出存成 `data/cards/<card_id>.json`，再執行 `npm run validate-cards`。
+
+確認數字和官網一致後，把 `verified` 改成 `true`。卡面圖片（選用）放在 `public/cards/`，並在 JSON 的 `image` 欄位填檔名。
+
+## 目前收錄的卡片
+
+第一銀行（綠活卡、iLEO、宜蘭認同卡）、聯邦銀行（賴點卡、幸福M卡）、兆豐銀行（Gogoro 聯名卡）、永豐銀行（幣倍卡）、國泰世華（CUBE）、星展銀行（eco 永續卡）。
+
+> ⚠️ 目前只有國泰 CUBE 有資料，而且是**示意用的範例數字**（`verified: false`）。其他卡片會在啟用自動化後，由 Claude 從官網原文建立。
 
 ## 計算方式
 

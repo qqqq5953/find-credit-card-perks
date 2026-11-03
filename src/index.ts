@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { catalog, dictionary } from "./data";
+import { catalog as defaultCatalog, dictionary } from "./data";
 import { recommend, todayInTaipei } from "./engine/calculate";
 import { formatNotification, type CardChange } from "./engine/diff";
 import { isRecognized, parseQuery, type Query } from "./engine/parse-query";
@@ -7,7 +7,7 @@ import { createLineClient, type LineClient } from "./line/client";
 import { helpMessage, manageCardsMessage, recommendationMessage, unknownQueryMessage } from "./line/messages";
 import { verifySignature } from "./line/signature";
 import { d1Repo, type Repo } from "./repo";
-import type { UserCard } from "./types";
+import type { Card, UserCard } from "./types";
 
 export interface Env {
   DB: D1Database;
@@ -19,6 +19,7 @@ export interface Env {
 }
 
 export interface Deps {
+  catalog: Card[];
   repo(env: Env): Repo;
   line(env: Env): LineClient;
   /** 驗證 LIFF 的 ID token，回傳 LINE user ID；失敗回傳 null */
@@ -38,6 +39,7 @@ async function verifyIdTokenWithLine(idToken: string, env: Env): Promise<string 
 }
 
 const defaultDeps: Deps = {
+  catalog: defaultCatalog,
   repo: (env) => d1Repo(env.DB),
   line: (env) => createLineClient(env.LINE_CHANNEL_ACCESS_TOKEN),
   verifyIdToken: verifyIdTokenWithLine,
@@ -64,6 +66,7 @@ function queryLabel(q: Query): string {
 
 export function createApp(deps: Deps = defaultDeps) {
   const app = new Hono<{ Bindings: Env }>();
+  const catalog = deps.catalog;
   const liffUrl = (env: Env) => `https://liff.line.me/${env.LIFF_ID}`;
 
   async function handleEvent(event: LineEvent, env: Env) {

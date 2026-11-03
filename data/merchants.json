@@ -1,5 +1,6 @@
 {
   "merchants": [
+    { "name": "Gogoro", "category": "transport", "aliases": ["gogoro 月租", "gogoro月租", "電池資費", "電池月租", "gogoro network"] },
     { "name": "7-ELEVEN", "category": "convenience_store", "aliases": ["7-11", "711", "小七", "統一超商"] },
     { "name": "全家", "category": "convenience_store", "aliases": ["全家便利商店", "familymart"] },
     { "name": "萊爾富", "category": "convenience_store", "aliases": ["hi-life"] },

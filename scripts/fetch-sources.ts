@@ -39,14 +39,21 @@ async function fetchPdf(source: Source): Promise<string> {
 
 interface Result {
   card_id: string;
-  status: SnapshotStatus | "error";
+  status: SnapshotStatus | "error" | "no_url";
   error?: string;
+}
+
+/** 卡片資料還沒建立，或還是未確認的範例資料 */
+function needsCardData(cardId: string): boolean {
+  const path = `data/cards/${cardId}.json`;
+  if (!existsSync(path)) return true;
+  return JSON.parse(readFileSync(path, "utf8")).verified === false;
 }
 
 async function main() {
   mkdirSync(SNAPSHOT_DIR, { recursive: true });
   const targets = sources.filter((s) => !only || only.has(s.card_id));
-  const needsBrowser = targets.some((s) => s.type === "html");
+  const needsBrowser = targets.some((s) => s.type === "html" && s.url);
   const browser = needsBrowser
     ? await chromium.launch(process.env.PLAYWRIGHT_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH } : {})
     : null;
@@ -55,6 +62,11 @@ async function main() {
   try {
     for (const source of targets) {
       const path = `${SNAPSHOT_DIR}/${source.card_id}.txt`;
+      if (!source.url) {
+        results.push({ card_id: source.card_id, status: "no_url" });
+        console.log(`⏭️  ${source.card_id}: 還沒有權益頁面網址，略過`);
+        continue;
+      }
       try {
         const raw = source.type === "pdf" ? await fetchPdf(source) : await fetchHtml(browser!, source);
         const text = normalizeText(raw, source);
@@ -74,14 +86,19 @@ async function main() {
   }
 
   const changed = results.filter((r) => r.status === "changed").map((r) => r.card_id);
+  // 第一次抓到頁面、而且卡片資料還沒建立（或仍是範例資料）的卡，要請 Claude 從原文建立資料
+  const newCards = results.filter((r) => r.status === "baseline" && needsCardData(r.card_id)).map((r) => r.card_id);
   const errors = results.filter((r) => r.status === "error");
-  writeFileSync("fetch-result.json", JSON.stringify({ changed, errors, results }, null, 2));
+  writeFileSync("fetch-result.json", JSON.stringify({ changed, new_cards: newCards, errors, results }, null, 2));
 
   // 給 GitHub Actions 的輸出
   if (process.env.GITHUB_OUTPUT) {
-    appendFileSync(process.env.GITHUB_OUTPUT, `changed=${changed.join(",")}\nerror_count=${errors.length}\n`);
+    appendFileSync(
+      process.env.GITHUB_OUTPUT,
+      `changed=${changed.join(",")}\nnew_cards=${newCards.join(",")}\ntargets=${[...changed, ...newCards].join(",")}\nerror_count=${errors.length}\n`,
+    );
   }
-  console.log(`\n變動：${changed.length} 張，失敗：${errors.length} 張`);
+  console.log(`\n變動：${changed.length} 張，待建立資料：${newCards.length} 張，失敗：${errors.length} 張`);
 }
 
 main();

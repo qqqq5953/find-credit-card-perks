@@ -73,8 +73,10 @@ GitHub Actions 自動部署需要的 API token：Cloudflare Dashboard → My Pro
 3. GitHub repo → Settings → Actions → General → Workflow permissions：選 **Read and write permissions**，並勾選 **Allow GitHub Actions to create and approve pull requests**。
 4. GitHub repo → Settings → Secrets and variables → Actions：填入上表的 Secrets，以及 Variable `WORKER_URL`。
 5. Actions 分頁 → 「偵測權益變動」→ Run workflow，手動跑一次：
-   - 第一次執行會建立「新增權益快照」的 PR，把各卡片頁面存成比對基準，merge 即可。
+   - 第一次執行時，Claude 會先替 `data/sources.json` 中還沒有網址的卡片搜尋官方權益頁面，接著抓取所有頁面、存成比對基準，再從原文建立每張卡的資料，最後開一個 PR，並用 LINE 通知你。
+   - PR 說明會列出每張卡的抓取結果，以及 Claude 整理出的主要權益和不確定的地方。請對照官網確認數字，正確的話把該卡的 `verified` 改成 `true` 後 merge。
    - 之後每天自動執行；有變動時，Claude 會更新 `data/cards/` 並開 PR，同時用 LINE 通知你。
+   - 網址找錯或抓取失敗時，直接修改 `data/sources.json` 的 `url`（或把它清空，讓 Claude 重新搜尋）。
 6. 確認 PR 內容正確後 merge → 「部署並通知持卡人」workflow 會自動部署，並推播給持有該卡的使用者。
 
 > 由 Actions 建立的 PR 不會再觸發 `CI` workflow（GitHub 的限制），所以「偵測權益變動」workflow 已經在建立 PR 前跑過測試和資料驗證，結果會寫在 PR 說明的最後。

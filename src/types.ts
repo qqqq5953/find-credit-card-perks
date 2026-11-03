@@ -91,6 +91,9 @@ export interface Merchant {
 
 export interface Source {
   card_id: string;
+  bank: string;
+  name: string;
+  /** 官方權益頁面；空字串代表還沒找到，會由 GitHub Actions 中的 Claude 搜尋後補上 */
   url: string;
   type: "html" | "pdf";
   /** 只擷取權益正文的 CSS selector，避免廣告或日期造成誤報 */

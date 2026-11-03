@@ -2,6 +2,23 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createApp, type Env } from "../src/index";
 import type { LineClient, LineMessage } from "../src/line/client";
 import { memoryRepo } from "../src/repo";
+import { makeCard } from "./fixtures";
+
+// 測試用的卡片，不依賴 data/cards/ 的實際內容
+const catalog = [
+  makeCard({
+    id: "test-switch",
+    bank: "測試銀行",
+    name: "切換卡",
+    switchable: true,
+    plans: [
+      { id: "digital", name: "數位", rules: [{ id: "d1", description: "網購", match: { categories: ["online"] }, rate: 0.03 }] },
+      { id: "life", name: "生活", rules: [{ id: "l1", description: "超市", match: { categories: ["supermarket"] }, rate: 0.02 }] },
+    ],
+  }),
+  makeCard({ id: "test-plain", bank: "測試銀行", name: "一般卡" }),
+  makeCard({ id: "test-other", bank: "其他銀行", name: "其他卡" }),
+];
 
 const SECRET = "test-channel-secret";
 const env = {
@@ -26,6 +43,7 @@ const line: LineClient = {
 };
 
 const app = createApp({
+  catalog,
   repo: () => repo,
   line: () => line,
   verifyIdToken: async (token) => (token === "good-token" ? "U-liff" : null),
@@ -63,16 +81,16 @@ describe("webhook", () => {
   });
 
   it("回覆推薦結果", async () => {
-    await repo.setUserCards("U1", [{ card_id: "cathay-cube", selected_plan: "essentials" }, { card_id: "ctbc-linepay", selected_plan: null }]);
+    await repo.setUserCards("U1", [{ card_id: "test-switch", selected_plan: "life" }, { card_id: "test-plain", selected_plan: null }]);
     await sendText("全聯 800");
     const msg = replies[0][0] as any;
     expect(msg.type).toBe("flex");
-    expect(msg.altText).toContain("國泰世華 CUBE 卡");
+    expect(msg.altText).toContain("測試銀行 切換卡");
     expect(msg.contents.header.contents[0].text).toBe("🛒 全聯");
   });
 
   it("無法辨識的商家回覆類別按鈕", async () => {
-    await repo.setUserCards("U1", [{ card_id: "ctbc-linepay", selected_plan: null }]);
+    await repo.setUserCards("U1", [{ card_id: "test-plain", selected_plan: null }]);
     await sendText("巷口麵攤");
     const msg = replies[0][0] as any;
     expect(msg.quickReply.items.length).toBeGreaterThan(5);
@@ -94,12 +112,12 @@ describe("LIFF API", () => {
     const ok = await app.request("/api/my-cards", {
       method: "PUT",
       headers,
-      body: JSON.stringify({ cards: [{ card_id: "cathay-cube" }, { card_id: "cathay-cube" }, { card_id: "fubon-j", selected_plan: "x" }], notify: false }),
+      body: JSON.stringify({ cards: [{ card_id: "test-switch" }, { card_id: "test-switch" }, { card_id: "test-plain", selected_plan: "x" }], notify: false }),
     }, env);
     expect(ok.status).toBe(200);
     expect(repo.cards.get("U-liff")).toEqual([
-      { card_id: "cathay-cube", selected_plan: "digital" },
-      { card_id: "fubon-j", selected_plan: null },
+      { card_id: "test-switch", selected_plan: "digital" },
+      { card_id: "test-plain", selected_plan: null },
     ]);
     expect(repo.notify.get("U-liff")).toBe(false);
 
@@ -110,8 +128,8 @@ describe("LIFF API", () => {
 
 describe("/internal/notify", () => {
   const changes = [
-    { cardId: "cathay-cube", cardName: "國泰世華 CUBE 卡", type: "updated", items: ["超市：回饋 2% → 1.5%"] },
-    { cardId: "fubon-j", cardName: "台北富邦 J 卡", type: "updated", items: ["海外：回饋 3% → 2%"] },
+    { cardId: "test-switch", cardName: "測試銀行 切換卡", type: "updated", items: ["超市：回饋 2% → 1.5%"] },
+    { cardId: "test-plain", cardName: "測試銀行 一般卡", type: "updated", items: ["海外：回饋 3% → 2%"] },
   ];
   const post = (auth: string) =>
     app.request("/internal/notify", { method: "POST", headers: { authorization: auth }, body: JSON.stringify({ changes }) }, env);
@@ -121,9 +139,9 @@ describe("/internal/notify", () => {
   });
 
   it("只推播給持卡且開啟通知的使用者，並合併成一則", async () => {
-    await repo.setUserCards("A", [{ card_id: "cathay-cube", selected_plan: "digital" }, { card_id: "fubon-j", selected_plan: null }]);
-    await repo.setUserCards("B", [{ card_id: "esun-ubear", selected_plan: null }]);
-    await repo.setUserCards("C", [{ card_id: "fubon-j", selected_plan: null }]);
+    await repo.setUserCards("A", [{ card_id: "test-switch", selected_plan: "digital" }, { card_id: "test-plain", selected_plan: null }]);
+    await repo.setUserCards("B", [{ card_id: "test-other", selected_plan: null }]);
+    await repo.setUserCards("C", [{ card_id: "test-plain", selected_plan: null }]);
     await repo.setNotify("C", false);
 
     const res = await post("Bearer notify-secret");
@@ -131,7 +149,7 @@ describe("/internal/notify", () => {
     expect(pushes).toHaveLength(1);
     expect(pushes[0].to).toBe("A");
     const text = (pushes[0].messages[0] as any).text as string;
-    expect(text).toContain("CUBE");
-    expect(text).toContain("J 卡");
+    expect(text).toContain("切換卡");
+    expect(text).toContain("一般卡");
   });
 });
